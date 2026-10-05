@@ -13,6 +13,8 @@ OrderGuard is an on-chain processor deployed on **X Layer** (OKB, chain 196). Ea
 
 - **Tape-out**: deploy your circuit (NAND/LATCH netlist) on-chain via `tapeout()`
 - **Verify**: call `eval(circuitId, inputs)` — instant, free, deterministic truth-table evaluation
+- **Visualize**: the demo page parses the on-chain `netlist()` bytes into an interactive **gate-level diagram** (gold-lit wires when a signal is 1)
+- **Design**: the built-in **gate-level circuit designer** — pick sources, add NAND gates, watch the live truth table, tape out with one click
 - **Trade**: list circuit NFTs on the non-custodial marketplace at [tapemkt.com/xlayer](https://tapemkt.com/xlayer) — buyer pays seller directly (99% creator / 1% fee), the platform never touches funds, and every sale re-checks on-chain ownership (no double-selling). Anyone can tape out and list their own circuits.
 
 ### On-chain contracts (X Layer mainnet)
@@ -63,9 +65,11 @@ OrderGuard 是部署在 **X Layer** 上的链上风控处理器。每张「流�
 
 - **流片**：`tapeout()` 把网表部署上链
 - **验证**：`eval(circuitId, inputs)` 即时、免费、确定性地输出真值表结果
+- **可视化**：演示页把链上 `netlist()` 字节码解析成**门级逻辑图**（信号导通时金色发光）
+- **设计器**：页面内置**门级电路设计器**——选源、加门、实时真值表、一键流片，人人零门槛创作链上电路
 - **交易**：在 [tapemkt.com/xlayer](https://tapemkt.com/xlayer) 非托管挂单出售——买家钱包直付卖家（99% 创作者 / 1% 平台费），成交前链上复核卖家持有（防一电多卖）
 
-**2026-10-05**: marketplace is live on X Layer mainnet — tape-out, eval verification and non-custodial OKB settlement all functional end-to-end.
+**2026-10-05**: marketplace is live on X Layer mainnet — tape-out, eval verification and non-custodial OKB settlement all functional end-to-end. Gate-level visualization & circuit designer shipped (`xl.html`, single-file ES5, Chrome 81+ compatible).
 
 网表二进制格式见 [NETLIST-FORMAT.md](NETLIST-FORMAT.md)（逆向自官方实现并实测验证）。
 

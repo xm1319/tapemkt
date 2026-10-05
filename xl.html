@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrderGuard 控制台 · X Layer · TapeOut Market</title>
+<meta name="robots" content="index,follow">
+<script defer src="vendor/ethers.umd.c81.js?v=20261002"></script>
+<style>
+  :root { --bg:#0e1117; --card:#161b26; --line:#232b3d; --tx:#e8ecf4; --dim:#8b94a8; --blue:#4f8cff; --ok:#2ecc8f; --warn:#ffb020; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--tx); padding:16px 12px 60px; max-width:860px; margin:0 auto; line-height:1.6; }
+  a { color:var(--blue); text-decoration:none; }
+  .crumb { font-size:13px; color:var(--dim); margin-bottom:12px; }
+  .crumb a { color:var(--dim); }
+  h1 { font-size:22px; margin-bottom:2px; }
+  .sub { color:var(--dim); font-size:13.5px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .card h2 { font-size:16px; margin-bottom:10px; }
+  .card h2 small { font-weight:normal; color:var(--dim); font-size:12px; margin-left:8px; }
+  .kv { display:flex; flex-wrap:wrap; gap:6px 18px; font-size:13.5px; }
+  .kv div { min-width:150px; }
+  .kv b { color:var(--dim); font-weight:normal; font-size:12px; display:block; }
+  .addr { font-family:Consolas,Menlo,monospace; font-size:12px; color:var(--blue); word-break:break-all; cursor:pointer; }
+  .chip { display:inline-block; background:#1c2740; color:var(--blue); border-radius:6px; padding:1px 8px; font-size:12px; margin-left:6px; }
+  button { background:var(--blue); color:#fff; border:0; border-radius:8px; padding:9px 16px; font-size:14px; cursor:pointer; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  button.ghost { background:#222b3f; color:var(--tx); }
+  button.mini { padding:4px 10px; font-size:12px; border-radius:6px; }
+  .bits { display:flex; flex-wrap:wrap; gap:10px; margin:10px 0; }
+  .bit { text-align:center; }
+  .bit .sw { width:52px; height:30px; border-radius:15px; background:#2a3348; position:relative; cursor:pointer; transition:background .15s; }
+  .bit .sw.on { background:var(--ok); }
+  .bit .sw i { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .15s; }
+  .bit .sw.on i { left:25px; }
+  .bit .sw em { position:absolute; top:0; height:30px; line-height:30px; font-size:13px; font-style:normal; font-weight:bold; color:#eaf1ff; }
+  .bit .sw.on em { left:9px; }
+  .bit .sw:not(.on) em { right:9px; }
+  .bit label { font-size:12.5px; color:#c9d1e0; display:block; margin-top:5px; text-align:center; }
+  .bit .bv { display:inline-block; margin-top:4px; min-width:24px; border-radius:6px; background:#1c2740; color:var(--blue); font-size:12.5px; font-weight:bold; padding:1px 8px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { border:1px solid var(--line); padding:6px 10px; text-align:center; }
+  th { color:var(--dim); font-weight:normal; background:#12161f; }
+  td.hit { color:var(--warn); }
+  .mono { font-family:Consolas,Menlo,monospace; }
+  .gates { font-size:13px; color:var(--dim); }
+  .gates li { margin:2px 0 2px 18px; }
+  .mkgrid { display:flex; flex-wrap:wrap; gap:10px; }
+  .mkcard { background:#131826; border:1px solid var(--line); border-radius:10px; padding:10px 12px; width:238px; box-sizing:border-box; }
+  .mkcard.sold { opacity:.55; }
+  .mkhead { display:flex; align-items:center; gap:8px; }
+  .mkname { font-size:13.5px; color:var(--tx); font-weight:bold; line-height:1.3; }
+  .mkspec { font-size:11.5px; color:var(--dim); margin:6px 0 2px; }
+  .mkdesc { font-size:11.5px; color:var(--dim); min-height:32px; }
+  .mkrow { display:flex; align-items:center; justify-content:space-between; margin-top:7px; }
+  .mkprice { color:#d4af37; font-weight:bold; font-size:14px; }
+  .mkbadge { font-size:10.5px; border-radius:5px; padding:1px 7px; }
+  .badge-open { background:#12301f; color:var(--ok); }
+  .badge-sold { background:#3a2020; color:#ff8a80; }
+  .badge-genesis { background:#3a2e10; color:#d4af37; }
+  .mkstats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .mkstat { flex:1; min-width:110px; background:#131826; border:1px solid var(--line); border-radius:10px; padding:9px 13px; }
+  .mkstat b { display:block; font-size:21px; color:#d4af37; line-height:1.25; }
+  .mkstat span { font-size:11.5px; color:var(--dim); }
+  .mkctl { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  .mkctl input, .mkctl select { background:#131826; border:1px solid var(--line); color:var(--tx); border-radius:8px; padding:7px 10px; font-size:12.5px; }
+  .mkctl input { flex:1; min-width:150px; }
+  .mkctl label { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--dim); }
+  .mkctl .mkcount { font-size:12px; color:var(--dim); margin-left:auto; }
+  .mkctl .mkcount b { color:#d4af37; }
+  .truth { font-family:Consolas,monospace; font-size:11px; background:#0d1119; border:1px solid var(--line); border-radius:8px; padding:7px 9px; margin-top:8px; color:var(--dim); white-space:pre-line; }
+  .truth b { color:var(--ok); }
+  .tpl { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+  .tpl button.ghost.sel { background:#1c3557; color:var(--blue); border:1px solid var(--blue); }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px; }
+  .note { font-size:12.5px; color:var(--dim); margin-top:8px; }
+  .msg { border-radius:8px; padding:9px 12px; font-size:13px; margin-top:10px; display:none; }
+  .msg.ok { background:#0e2b1f; color:var(--ok); display:block; }
+  .msg.err { background:#2b1414; color:#ff7a7a; display:block; }
+  .msg.info { background:#14202e; color:var(--blue); display:block; }
+  .badge { display:inline-block; background:#132a1f; color:var(--ok); border-radius:6px; padding:1px 8px; font-size:12px; }
+  .spin { display:inline-block; animation:sp 1s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  select, input[type=number] { background:#1a2233; color:var(--tx); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:14px; }
+  /* ===== 门级电路可视化（黑金风） ===== */
+  .netviz { margin:12px 0 4px; background:#0d1220; border:1px solid var(--line); border-radius:12px; padding:8px; overflow-x:auto; }
+  .netviz svg { display:block; min-width:100%; }
+  .netviz .w1 { stroke:#d4af37; stroke-width:2.2; }
+  .netviz .w0 { stroke:#3d4657; stroke-width:1.6; }
+  .netviz .body1 { fill:#2a230f; stroke:#d4af37; stroke-width:2; }
+  .netviz .body0 { fill:#161c2a; stroke:#55607a; stroke-width:1.6; }
+  .netviz .pin1 { fill:#d4af37; } .netviz .pin0 { fill:#3d4657; }
+  .netviz .lbl { fill:#8b95ab; font:11px 'Segoe UI',sans-serif; }
+  .netviz .lbg { fill:#e8d48a; font:600 11px 'Segoe UI',sans-serif; }
+  .netviz .out1 { fill:#ffd76a; font:700 13px 'Segoe UI',sans-serif; }
+  .netviz .out0 { fill:#6b768c; font:700 13px 'Segoe UI',sans-serif; }
+  .netviz .glow { filter:drop-shadow(0 0 4px rgba(212,175,55,.75)); }
+  /* ===== 门级设计器 ===== */
+  .dsnrow { display:flex; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap; }
+  .dsnrow .gtag { min-width:52px; color:var(--warn); font-weight:600; font-size:13px; }
+  .dsnbits { display:flex; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--dim); margin:8px 0; }
+  .dsnbits b { color:var(--tx); }
+</style>
+</head>
+<body>
+<div class="crumb"><a href="/">← 返回电路交易市场</a> · X Layer (chain 196)</div>
+<h1>🛡️ OrderGuard <span class="chip">OGD</span></h1>
+<div class="sub">电路交易市场的链上风控处理器 · 部署于 X Layer · TapeOut Genesis Transistor 黑客松参赛项目</div>
+
+<div class="card">
+  <h2>处理器信息 <small>数据经网关直读链上</small></h2>
+  <div class="kv">
+    <div><b>处理器 (CPU)</b><span class="addr" id="aProc">0x57F319CF056F72F48cF1dbb670F2A3DB007Aa355</span></div>
+    <div><b>晶体管 (NAND)</b><span class="addr" id="aTrans">读取中…</span></div>
+    <div><b>部署钱包</b><span class="addr">0xafCdF02Baf89a40Bd1E8E6c8F4dC9d29C3e62F33</span></div>
+    <div><b>晶体管供应上限</b><span id="vCap">—</span></div>
+    <div><b>单价 / 已铸</b><span id="vPrice">—</span></div>
+    <div><b>流片协议费</b><span id="vFee">—</span></div>
+    <div><b>已流片电路</b><span id="vCircuits">—</span></div>
+  </div>
+  <div class="note">浏览器 explorer：<a href="https://www.oklink.com/xlayer/address/0x57F319CF056F72F48cF1dbb670F2A3DB007Aa355" target="_blank" rel="noopener">OKLink 查看处理器</a> · 部署 tx <span class="mono">0x9201…8e51</span></div>
+</div>
+
+<div class="card">
+  <h2>电路浏览器与 eval 实验台 <small>eval 直接调用链上，结果可复现</small></h2>
+  <div class="row">
+    <select id="selCircuit"></select>
+    <button class="ghost mini" id="btnReload">刷新电路列表</button>
+  </div>
+  <div class="gates" id="gateInfo" style="margin-top:10px"></div>
+  <div style="margin-top:14px;font-size:14px">输入开关：<b style="color:var(--ok)">绿色 = 1（条件成立）</b>，<b style="color:#aab2c5">灰色 = 0（条件不成立）</b>。点击切换，下方输出和真值表自动重算（真实链上 eval）。</div>
+  <div class="bits" id="bits"></div>
+  <div class="netviz" id="netviz" style="display:none"></div>
+  <div class="row">
+    <button id="btnEval">▶ 在链上执行 eval</button>
+    <span id="evalOut" class="mono" style="font-size:15px"></span>
+  </div>
+  <div class="note" id="truthWrap" style="display:none">
+    <b style="color:var(--tx)">完整真值表（实时调用链上 eval 生成）：</b>
+    <table id="truth" style="margin-top:6px"></table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>公开流片工具 <small>任何人都可以往 OrderGuard 流片电路</small></h2>
+  <div style="font-size:13.5px;color:var(--dim)">选一个电路模板（或流片示例电路），连接 X Layer 钱包，一键完成「买晶体管 → 流片上链」。你流片的电路会出现在上面的电路浏览器里，成为 OrderGuard 生态的一部分。</div>
+  <div class="tpl" id="tpls"></div>
+  <div class="gates mono" id="tplInfo"></div>
+  <div class="row">
+    <button id="btnConnect">🔗 连接 X Layer 钱包</button>
+    <button id="btnTape" disabled>🏭 流片上链</button>
+    <span id="costEst" class="note" style="margin:0"></span>
+  </div>
+  <div class="msg" id="tapeMsg"></div>
+  <div class="note">费用极低（实测全流程 ≈ 0.002 OKB）。流片费 0.0013 OKB + 每个晶体管 0.0001 OKB + 协议费 0.00066 OKB。X Layer 不在钱包里？连接时会自动弹出添加网络（RPC：<span class="mono">rpc.xlayer.tech</span>）。</div>
+</div>
+
+<div class="card">
+  <h2>门级电路设计器 <span class="chip">所见即所得</span><small>像搭积木一样设计你的链上电路，实时真值表预览，一键流片</small></h2>
+  <div class="row" style="align-items:center">
+    <label style="font-size:14px">输入数：
+      <select id="dsnNIn"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select>
+    </label>
+    <button class="ghost mini" id="dsnAdd">＋ 添加 NAND 门</button>
+    <button class="ghost mini" id="dsnReset">清空</button>
+    <button class="mini" id="dsnSample">载入示例：XOR</button>
+    <span id="dsnCount" class="note" style="margin:0"></span>
+  </div>
+  <div id="dsnGates" class="gates"></div>
+  <div class="row" style="margin-top:8px">
+    <button id="dsnTape" class="mini" disabled>🎨 流片这个设计</button>
+    <span class="note" style="margin:0">输出 = 最后一个门的信号（链上自动补输出缓冲）</span>
+  </div>
+  <div class="msg" id="dsnMsg"></div>
+  <div class="netviz" id="dsnViz"></div>
+  <div class="dsnbits" id="dsnTruth"></div>
+  <div class="note">设计器在浏览器本地完成：门图与真值表为实时本地模拟；点「流片」后同一份网表字节码上链，链上 eval 结果与本地一致（这正是布尔电路可复现的特性）。</div>
+</div>
+
+<div class="card">
+  <h2>电路市场 <span class="chip">OKB 直付 · 非托管</span><small>买家钱包直付卖家，平台只登记不碰钱</small></h2>
+  <div class="mkstats">
+    <div class="mkstat"><b id="mkOpenN">—</b><span>在售挂单</span></div>
+    <div class="mkstat"><b id="mkFillN">—</b><span>累计成交</span></div>
+    <div class="mkstat"><b>1%</b><span>平台手续费</span></div>
+    <div class="mkstat"><b id="mkMineN">—</b><span>我的挂单</span></div>
+  </div>
+  <div class="mkctl">
+    <input id="mkQ" placeholder="搜索名称 / 卖家地址…">
+    <select id="mkSort">
+      <option value="new">排序：最新挂出</option>
+      <option value="priceAsc">价格 低→高</option>
+      <option value="priceDesc">价格 高→低</option>
+      <option value="gates">门数 少→多</option>
+    </select>
+    <label><input type="checkbox" id="mkOnlyMine"> 仅我的</label>
+    <span class="mkcount">共 <b id="mkShown">0</b> 条</span>
+  </div>
+  <div id="mkBook" class="gates">加载挂单簿中…</div>
+  <h2 style="margin-top:26px">成交记录 <small>买家钱包直付 · 1% 平台费 · 每笔 tx 链上可查</small></h2>
+  <table>
+    <thead><tr><th>电路</th><th>卖家</th><th>买家</th><th>成交额</th><th>手续费</th><th>时间</th><th>tx</th></tr></thead>
+    <tbody id="mkFills"><tr><td colspan="7" style="text-align:center;color:var(--dim);padding:18px">加载中…</td></tr></tbody>
+  </table>
+  <div class="note">购买流程：点「买入」→ 钱包弹窗确认两笔转账（99% 给卖家 + 1% 平台费）→ 服务端链上验证支付后登记成交 → 卖家转账电路 NFT 给你。所有挂单在成交前都会复核卖家仍持有该电路（防一电多卖）。</div>
+</div>
+
+<div class="card">
+  <h2>我的电路 · 一键挂出 <small>连接钱包后自动列出你在 OrderGuard 上的电路</small></h2>
+  <div id="myCircuits" class="gates">连接钱包后显示…</div>
+  <div class="msg" id="mkMsg"></div>
+</div>
+
+<div class="card">
+  <h2>为什么是 OrderGuard？</h2>
+  <div style="font-size:13.5px;color:var(--dim)">
+    OrderGuard 把交易市场的风控规则做成<strong style="color:var(--tx)">链上电路</strong>：每张流片电路编码一条布尔风控规则（价格偏离、重复支付、白名单门……），任何 AI Agent 或合约在 X Layer 上结算订单前都可以免费调用 <span class="mono">eval()</span> 验证——无需预言机、无需信任第三方、结果永久可复现。本页面即为活体演示：你在上面看到的每一次 eval，都是真实发生在 X Layer 上的链上计算。
+  </div>
+  <div class="mkstats" style="margin-top:14px">
+    <div class="mkstat" style="cursor:default"><b style="font-size:15px;line-height:1.5">01 部署 ✓</b><span>处理器 OrderGuard 部署于 X Layer · <a href="https://www.oklink.com/x-layer/evm/address/0x57F319CF056F72F48cF1dbb670F2A3DB007Aa355" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">合约 ↗</a></span></div>
+    <div class="mkstat" style="cursor:default"><b style="font-size:15px;line-height:1.5">02 经济学 ✓</b><span>晶体管 supply 10000 · 0.0001 OKB/枚 · <a href="https://www.oklink.com/x-layer/evm/address/0x8e71FC45ff47E5a7bA1ad2960793ebAdD2739D9e" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">合约 ↗</a></span></div>
+    <div class="mkstat" style="cursor:default"><b style="font-size:15px;line-height:1.5">03 电路 ✓</b><span>5 颗全部流片 · 全输入组合链上 eval 验证（下方可当场重跑）</span></div>
+    <div class="mkstat" style="cursor:default"><b style="font-size:15px;line-height:1.5">04 提交包 ✓</b><span><a href="https://github.com/xm1319/tapemkt" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">GitHub 开源 ↗</a> · 提交 thread：<a href="https://x.com/dc_cap/status/2106931086140035252" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">@dc_cap ↗</a></span></div>
+  </div>
+</div>
+
+<div id="toast" class="msg" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9"></div>
+
+<script>
+(function () {
+'use strict';
+/* ================= 常量 ================= */
+var PROC = '0x57F319CF056F72F48cF1dbb670F2A3DB007Aa355';
+var GATEWAY_XL = location.origin + '/api/rpc-xl';
+var CHAIN = { chainId: '0xc4', chainName: 'X Layer', nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 }, rpcUrls: ['https://rpc.xlayer.tech'], blockExplorerUrls: ['https://www.oklink.com/xlayer'] };
+var INPUT_LABELS = { 1: ['priceOK 价格正常', 'fundsOK 资金充足'] };
+
+var PROC_ABI = [
+  'function tapeout(bytes nl, uint32 nIn, uint32 nOut) payable returns (uint256)',
+  'function TAPEOUT_FEE() view returns (uint256)',
+  'function eval(uint256 id, bytes inputs) view returns (bytes)',
+  'function netlist(uint256 id) view returns (bytes)',
+  'function circuitInfo(uint256 id) view returns (uint32 nIn, uint32 nOut, uint32 nState, uint32 gateCount)',
+  'function transistors() view returns (address)',
+  'function name() view returns (string)',
+  'function nextId() view returns (uint256)',
+  'function ownerOf(uint256) view returns (address)',
+  'event TapedOut(uint256 indexed circuitId, address indexed t)'
+];
+var TRANS_ABI = [
+  'function mint(uint256 id, uint256 amount) payable',
+  'function mintPrice() view returns (uint256)',
+  'function minted() view returns (uint256)',
+  'function supplyCap() view returns (uint256)',
+  'function protocolFee() view returns (uint256)',
+  'function balanceOf(address account, uint256 id) view returns (uint256)',
+];
+
+/* ================= 网表编码（与链上格式一致，已实测验证） =================
+   信号: 0=const0, 1=const1, 2..2+nIn-1=输入, 门从 2+nIn 起拓扑序编号 */
+function u24(n) { return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function buildNetlist(nIn, gates) {
+  var p = [], i;
+  for (i = 0; i < gates.length; i++) {
+    var g = gates[i];
+    if (g[0] === 'NAND') p.push(0x00, u24(g[1])[0], u24(g[1])[1], u24(g[1])[2], u24(g[2])[0], u24(g[2])[1], u24(g[2])[2]);
+    else if (g[0] === 'LATCH') p.push(0x01, u24(g[1])[0], u24(g[1])[1], u24(g[1])[2]);
+  }
+  return { nl: ethers.hexlify(new Uint8Array(p)), nIn: nIn, nOut: 1, nNand: gates.filter(function (g) { return g[0] === 'NAND'; }).length };
+}
+/* 模板：门数组按拓扑序，输出 = 最后一个信号 */
+var TEMPLATES = [
+  { key: 'guard', name: '🛡️ 风控告警门', nIn: 2, gates: [['NAND', 2, 3], ['NAND', 4, 4], ['NAND', 5, 5]], desc: 'out = NOT(in0 AND in1)' },
+  { key: 'not', name: '非门 NOT', nIn: 1, gates: [['NAND', 2, 2]], desc: 'out = NOT(in0)' },
+  { key: 'and', name: '与门 AND', nIn: 2, gates: [['NAND', 2, 3], ['NAND', 4, 4]], desc: 'out = in0 AND in1' },
+  { key: 'or', name: '或门 OR', nIn: 2, gates: [['NAND', 2, 2], ['NAND', 3, 3], ['NAND', 4, 5]], desc: 'out = in0 OR in1' },
+  { key: 'xor', name: '异或门 XOR', nIn: 2, gates: [['NAND', 2, 3], ['NAND', 2, 4], ['NAND', 3, 4], ['NAND', 5, 6]], desc: 'out = in0 XOR in1' },
+];
+
+/* ================= 工具 ================= */
+function $(id) { return document.getElementById(id); }
+function toast(msg, cls) { var t = $('toast'); t.textContent = msg; t.className = 'msg ' + (cls || 'info'); clearTimeout(t._h); t._h = setTimeout(function () { t.className = 'msg'; }, 2600); }
+function fmtEther(x) { return ethers.formatEther(x); }
+function oklink(addr) { return 'https://www.oklink.com/xlayer/address/' + addr; }
+
+/* 网关只读 provider（同源，无 CORS） */
+function gwProvider() {
+  var fr = new ethers.FetchRequest(GATEWAY_XL);
+  return new ethers.JsonRpcProvider(fr, 196, { staticNetwork: true });
+}
+
+/* 网表反解码（展示用） */
+function decodeNetlist(hex, nIn) {
+  var b = ethers.getBytes(hex), gates = [], i = 0, sig = 2 + nIn;
+  while (i < b.length) {
+    var op = b[i];
+    if (op === 0) { gates.push({ sig: sig, op: 'NAND', a: (b[i+1] << 16) | (b[i+2] << 8) | b[i+3], b: (b[i+4] << 16) | (b[i+5] << 8) | b[i+6] }); i += 7; }
+    else if (op === 1) { gates.push({ sig: sig, op: 'LATCH', d: (b[i+1] << 16) | (b[i+2] << 8) | b[i+3] }); i += 4; }
+    else break;
+    sig++;
+  }
+  return gates;
+}
+function sigName(n, nIn) {
+  if (n === 0) return '0';
+  if (n === 1) return '1';
+  if (n < 2 + nIn) return 'in' + (n - 2);
+  return 'g' + (n - 2 - nIn);
+}
+
+/* ================= 门级 SVG 可视化（黑金风，实时信号高亮） =================
+   门值高亮 = 本地同步模拟；最终输出以链上 eval() 为准 */
+function simVals(gates, nIn, v) {
+  var val = { 0: 0, 1: 1 }, i;
+  for (i = 0; i < nIn; i++) val[2 + i] = (v >> i) & 1;
+  for (i = 0; i < gates.length; i++) {
+    var g = gates[i], o = 0;
+    if (g.op === 'NAND') o = (val[g.a] && val[g.b]) ? 0 : 1;
+    else if (g.op === 'LATCH') o = val[g.d] ? 0 : 1;
+    val[g.sig] = o;
+  }
+  return val;
+}
+function gateDepthMap(gates, nIn) {
+  var col = { 0: 0, 1: 0 }, i;
+  for (i = 0; i < nIn; i++) col[2 + i] = 0;
+  for (i = 0; i < gates.length; i++) {
+    var g = gates[i], d = 0;
+    if (g.op === 'NAND') d = 1 + Math.max(col[g.a] || 0, col[g.b] || 0);
+    else if (g.op === 'LATCH') d = 1 + (col[g.d] || 0);
+    col[g.sig] = d;
+  }
+  return col;
+}
+function circuitSVG(gates, nIn, nOut, v) {
+  var val = simVals(gates, nIn, v), col = gateDepthMap(gates, nIn);
+  var maxCol = 0, k;
+  for (k in col) if (col[k] > maxCol) maxCol = col[k];
+  var RH = 56, TOP = 30, rows = nIn + gates.length;
+  var W = 130 + (maxCol + 1) * 125, H = TOP + rows * RH + 26;
+  var yC = function (sig) { return TOP + (sig - 2) * RH + 17; };   /* 每个信号占一行 */
+  var gx = function (sig) { return 96 + col[sig] * 125; };          /* 门符号左缘 x */
+  var s = '', i, g;
+  var cls = function (b) { return b ? '1' : '0'; };
+  /* 输入节点 */
+  for (i = 0; i < nIn; i++) {
+    var sig = 2 + i, y = yC(sig), on = val[sig];
+    s += '<circle cx="46" cy="' + y + '" r="13" class="body' + cls(on) + (on ? ' glow' : '') + '"/>'
+      + '<text x="46" y="' + (y + 4) + '" text-anchor="middle" class="' + (on ? 'lbg' : 'lbl') + '">in' + i + '</text>';
+  }
+  /* 门 */
+  for (i = 0; i < gates.length; i++) {
+    g = gates[i];
+    var x = gx(g.sig), y = yC(g.sig) - 17, on = val[g.sig];
+    if (g.op === 'NAND') {
+      s += '<path d="M ' + x + ' ' + y + ' L ' + (x + 16) + ' ' + y + ' A 17 17 0 0 1 ' + (x + 16) + ' ' + (y + 34) + ' L ' + x + ' ' + (y + 34) + ' Z" class="body' + cls(on) + (on ? ' glow' : '') + '"/>'
+        + '<circle cx="' + (x + 37) + '" cy="' + (y + 17) + '" r="4" class="body' + cls(on) + '"/>'
+        + '<text x="' + (x + 7) + '" y="' + (y + 21.5) + '" class="lbl" style="font-size:9.5px">N</text>';
+    } else {
+      s += '<rect x="' + x + '" y="' + y + '" width="38" height="34" rx="6" class="body' + cls(on) + (on ? ' glow' : '') + '"/>'
+        + '<text x="' + (x + 19) + '" y="' + (y + 21.5) + '" text-anchor="middle" class="lbl" style="font-size:9.5px">D</text>';
+    }
+    /* 输入连线 */
+    var ins = g.op === 'NAND' ? [g.a, g.b] : [g.d];
+    for (var p = 0; p < ins.length; p++) {
+      var src = ins[p], py = y + 10 + p * 14;
+      if (src === 0 || src === 1) {
+        s += '<text x="' + (x - 8) + '" y="' + (py + 4) + '" text-anchor="end" class="' + (src ? 'lbg' : 'lbl') + '">' + src + '</text>'
+          + '<line x1="' + (x - 4) + '" y1="' + py + '" x2="' + x + '" y2="' + py + '" class="w' + cls(src) + '"/>';
+        continue;
+      }
+      var sx = src < 2 + nIn ? 59 : gx(src) + 45, sy = yC(src);
+      var mx = (sx + x) / 2;
+      s += '<path d="M ' + sx + ' ' + sy + ' C ' + mx + ' ' + sy + ', ' + mx + ' ' + py + ', ' + x + ' ' + py + '" class="w' + cls(val[src]) + (val[src] ? ' glow' : '') + '" fill="none"/>';
+      s += '<circle cx="' + x + '" cy="' + py + '" r="2.6" class="pin' + cls(val[src]) + '"/>';
+    }
+    /* 门号标注 */
+    s += '<text x="' + (x - 8) + '" y="' + (y + 15) + '" text-anchor="end" class="lbl">' + sigName(g.sig, nIn) + '</text>';
+  }
+  /* 输出箭头（输出 = 最后一个信号） */
+  var lastSig = 2 + nIn + gates.length - 1, lo = val[lastSig];
+  var ox = gx(lastSig) + (gates[lastSig - 2 - nIn] && gates[lastSig - 2 - nIn].op === 'NAND' ? 45 : 42), oy = yC(lastSig);
+  s += '<line x1="' + ox + '" y1="' + oy + '" x2="' + (ox + 34) + '" y2="' + oy + '" class="w' + cls(lo) + (lo ? ' glow' : '') + '"/>'
+    + '<text x="' + (ox + 40) + '" y="' + (oy + 5) + '" class="' + (lo ? 'out1' : 'out0') + '">out=' + lo + '</text>';
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>'
+    + '<div class="note" style="margin:4px 0 0">金色 = 信号 1（导通发光）· 灰色 = 信号 0 · 门图 = NAND（与门+反相泡）。当前输入 ' + v.toString(2).padStart(nIn, '0') + '，门值为本地同步模拟，最终输出以链上 eval 为准。</div>';
+}
+
+/* ================= 页面状态 =================
+ * 注意：ethers 是 defer 加载，本内嵌脚本解析更早——
+ * 任何 ethers 调用必须等 boot()（DOMContentLoaded 后）才能跑 */
+var provider = null, procRead = null;
+var transAddr = null, transRead = null;
+var circuits = [];          /* {id, nIn, nOut, gates} */
+var curCircuit = null;
+var curGates = null;
+var inputState = [];
+var selTpl = TEMPLATES[0];
+var signer = null;
+
+/* ================= 信息卡 ================= */
+function loadInfo() {
+  procRead.transistors().then(function (a) {
+    transAddr = a;
+    $('aTrans').textContent = a;
+    $('aTrans').onclick = function () { location.href = oklink(a); };
+    transRead = new ethers.Contract(a, TRANS_ABI, provider);
+    return Promise.all([transRead.mintPrice(), transRead.supplyCap(), transRead.minted(), transRead.protocolFee(), procRead.TAPEOUT_FEE()]);
+  }).then(function (r) {
+    $('vPrice').textContent = fmtEther(r[0]) + ' OKB / 已铸 ' + r[2].toString();
+    $('vCap').textContent = r[1].toString() + ' 枚';
+    $('vFee').textContent = '流片 ' + fmtEther(r[4]) + ' OKB · 铸造协议费 ' + fmtEther(r[3]) + ' OKB';
+    procRead.nextId().then(function (n) { $('vCircuits').textContent = (Number(n) - 1) + ' 张'; }).catch(function () {});
+    updateCostEst();
+  }).catch(function (e) { $('vPrice').textContent = '读取失败'; });
+  loadCircuits();
+}
+
+/* ================= 电路浏览器 ================= */
+function loadCircuits() {
+  var tries = [], n = 0;
+  /* 逐个探测 id=1..12（少量电路，够展示） */
+  function probe(id) {
+    return procRead.circuitInfo(id).then(function (info) {
+      return procRead.netlist(id).then(function (nl) {
+        return { id: id, nIn: Number(info.nIn), nOut: Number(info.nOut), nState: Number(info.nState), gateCount: Number(info.gateCount), nl: nl };
+      });
+    });
+  }
+  var ps = [];
+  for (var i = 1; i <= 12; i++) ps.push(probe(i).catch(function () { return null; }));
+  Promise.all(ps).then(function (rs) {
+    circuits = rs.filter(function (x) { return x; });
+    var sel = $('selCircuit');
+    sel.innerHTML = '';
+    circuits.forEach(function (c, idx) {
+      var o = document.createElement('option');
+      var label = '#' + c.id;
+      if (c.id === 1) label += ' 风控告警门（创世电路）';
+      else label += ' 电路（' + c.nIn + '入/' + c.nOut + '出）';
+      o.value = idx; o.textContent = label;
+      sel.appendChild(o);
+    });
+    if (!circuits.length) { $('gateInfo').textContent = '（尚未有电路）'; return; }
+    selCircuit(0);
+  });
+}
+function pickInputs(c) {
+  var wrap = $('bits'); wrap.innerHTML = '';
+  var labels = INPUT_LABELS[c.id];
+  inputState = [];
+  for (var i = 0; i < c.nIn; i++) {
+    inputState.push(1);
+    var d = document.createElement('div'); d.className = 'bit';
+    var sw = document.createElement('div'); sw.className = 'sw on';
+    sw.innerHTML = '<i></i><em>1</em>';
+    var swVal = sw.getElementsByTagName('em')[0];
+    var lb = document.createElement('label');
+    lb.textContent = labels ? labels[i] : 'in' + i;
+    (function (idx, el, sval) {
+      el.onclick = function () {
+        inputState[idx] = inputState[idx] ? 0 : 1;
+        el.className = 'sw' + (inputState[idx] ? ' on' : '');
+        sval.textContent = inputState[idx] ? '1' : '0';
+        runEval();
+      };
+    })(i, sw, swVal);
+    d.appendChild(sw); d.appendChild(lb); wrap.appendChild(d);
+  }
+}
+function packBits(bits) {
+  var bytes = new Uint8Array(Math.max(1, Math.ceil(bits.length / 8)));
+  bits.forEach(function (v, i) { if (v) bytes[i >> 3] |= (1 << (i & 7)); });
+  return ethers.hexlify(bytes);
+}
+function unpackBits(hex, n) {
+  var b = ethers.getBytes(hex), out = [];
+  for (var i = 0; i < n; i++) out.push((b[i >> 3] >> (i & 7)) & 1);
+  return out;
+}
+function runEval() {
+  if (!curCircuit) return;
+  var c = curCircuit;
+  /* 门图实时高亮（本地同步模拟，链上 eval 结果随后覆盖输出值） */
+  var vz = $('netviz');
+  if (curGates && curGates.length && vz) {
+    vz.style.display = 'block';
+    var vv = 0;
+    for (var bi = 0; bi < inputState.length; bi++) if (inputState[bi]) vv |= (1 << bi);
+    vz.innerHTML = circuitSVG(curGates, c.nIn, c.nOut, vv);
+  }
+  procRead.eval(c.id, packBits(inputState)).then(function (outHex) {
+    var ob = unpackBits(outHex, c.nOut);
+    $('evalOut').innerHTML = '输出 = <b style="color:' + (ob[0] ? 'var(--warn)' : 'var(--ok)') + '">' + ob.join(',') + '</b>' + (c.id === 1 ? (ob[0] ? ' ⚠️ 告警' : ' ✅ 正常') : '');
+    renderTruth();
+  }).catch(function (e) { $('evalOut').textContent = 'eval 失败: ' + String(e.message || e).slice(0, 80); });
+}
+function renderTruth() {
+  var c = curCircuit;
+  if (!c || c.nIn > 3) { $('truthWrap').style.display = 'none'; return; }
+  var rows = [], n = 1 << c.nIn, i, j;
+  for (i = 0; i < n; i++) {
+    var bits = [];
+    for (j = 0; j < c.nIn; j++) bits.push((i >> (c.nIn - 1 - j)) & 1);
+    rows.push(bits);
+  }
+  $('truthWrap').style.display = '';
+  var labels = INPUT_LABELS[c.id] || [];
+  var html = '<tr><th>#</th>';
+  for (j = 0; j < c.nIn; j++) html += '<th>' + (labels[j] ? labels[j].split(' ')[0] : 'in' + j) + '</th>';
+  html += '<th>输出</th></tr>';
+  var done = 0;
+  rows.forEach(function (bits) {
+    procRead.eval(c.id, packBits(bits)).then(function (outHex) {
+      var ob = unpackBits(outHex, c.nOut);
+      var tr = '<tr><td>' + rows.indexOf(bits) + '</td>';
+      for (var k = 0; k < c.nIn; k++) tr += '<td>' + bits[k] + '</td>';
+      tr += '<td class="' + (ob[0] ? 'hit' : '') + '">' + ob.join(',') + '</td></tr>';
+      html += tr;
+      done++;
+      if (done === rows.length) $('truth').innerHTML = html;
+    }).catch(function () { done++; });
+  });
+}
+function selCircuit(idx) {
+  var c = circuits[idx]; if (!c) return;
+  curCircuit = c;
+  var gates = decodeNetlist(c.nl, c.nIn);
+  curGates = gates;
+  var html = '门级网表（' + gates.length + ' 门，链上 ' + c.gateCount + ' 门含输出缓冲）：<ul>';
+  gates.forEach(function (g) {
+    html += '<li>' + sigName(g.sig, c.nIn) + ' = ' + g.op + '(' + sigName(g.a !== undefined ? g.a : g.d, c.nIn) + (g.b !== undefined ? ', ' + sigName(g.b, c.nIn) : '') + ')</li>';
+  });
+  html += '</ul>';
+  $('gateInfo').innerHTML = html;
+  pickInputs(c);
+  runEval();
+}
+$('selCircuit').onchange = function () { selCircuit(Number(this.value)); };
+$('btnReload').onclick = function () { loadCircuits(); toast('已刷新', 'ok'); };
+$('btnEval').onclick = runEval;
+
+/* ================= 流片工具 ================= */
+function renderTpls() {
+  var wrap = $('tpls'); wrap.innerHTML = '';
+  TEMPLATES.forEach(function (t) {
+    var b = document.createElement('button');
+    b.className = 'ghost' + (t === selTpl ? ' sel' : '');
+    b.textContent = t.name;
+    b.onclick = function () { selTpl = t; renderTpls(); };
+    wrap.appendChild(b);
+  });
+  $('tplInfo').textContent = selTpl.desc + ' · ' + selTpl.gates.length + ' 个 NAND · 输入 ' + selTpl.nIn + ' 个';
+  updateCostEst();
+}
+function updateCostEst() {
+  if (!transRead) return;
+  Promise.all([transRead.mintPrice(), transRead.protocolFee(), procRead.TAPEOUT_FEE()]).then(function (r) {
+    var cost = BigInt(selTpl.gates.length) * r[0] + r[1] + r[2];
+    $('costEst').textContent = '≈ ' + fmtEther(cost) + ' OKB';
+  }).catch(function () { });
+}
+function setMsg(cls, txt) { var m = $('tapeMsg'); m.className = 'msg ' + cls; m.textContent = txt; }
+
+function ensureChain() {
+  return window.ethereum.request({ method: 'eth_chainId' }).then(function (cid) {
+    if (Number(cid) === 196) return;
+    return window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xc4' }] }).catch(function (e) {
+      if (e && (e.code === 4902 || e.code === -32603)) {
+        return window.ethereum.request({ method: 'wallet_addEthereumChain', params: [CHAIN] });
+      }
+      throw e;
+    });
+  });
+}
+$('btnConnect').onclick = function () {
+  if (!window.ethereum) { setMsg('err', '未检测到钱包插件（TokenPocket/OKX/MetaMask 均可）'); return; }
+  setMsg('info', '连接中…');
+  ensureChain().then(function () {
+    return window.ethereum.request({ method: 'eth_requestAccounts' });
+  }).then(function (accs) {
+    var bp = new ethers.BrowserProvider(window.ethereum, 'any');
+    return bp.getSigner().then(function (s) {
+      signer = s;
+      var btn = $('btnConnect');
+      btn.textContent = '✅ ' + String(accs[0]).slice(0, 6) + '…' + String(accs[0]).slice(-4);
+      $('btnTape').disabled = false;
+      if ($('dsnTape')) $('dsnTape').disabled = !dsn.gates.length;
+      setMsg('ok', '钱包已连接到 X Layer。选择模板后点「流片上链」，或到下方「门级电路设计器」创作你自己的电路。');
+      loadMyCircuits();
+      loadBook();
+    });
+  }).catch(function (e) { setMsg('err', '连接失败: ' + String(e && e.message || e).slice(0, 100)); });
+};
+$('btnTape').onclick = function () { doTapeout(selTpl, null, $('btnTape')); };
+function doTapeout(t, mfn, btnEl) {
+  var MF = mfn || setMsg;
+  var btn = btnEl || $('btnTape');
+  if (!signer) { MF('err', '请先连接钱包'); return; }
+  if (!transAddr) { MF('err', '晶体管合约尚未读出，请稍候重试'); return; }
+  var btnBack = btn.textContent;
+  btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> 执行中…';
+  var built = buildNetlist(t.nIn, t.gates);
+  var procW = new ethers.Contract(PROC, PROC_ABI, signer);
+  var transW = new ethers.Contract(transAddr, TRANS_ABI, signer);
+  signer.getAddress().then(function (me) {
+    return Promise.all([transW.mintPrice(), transW.protocolFee(), procW.TAPEOUT_FEE(), transW.balanceOf(me, 0)]);
+  }).then(function (r) {
+    var mp = r[0], pf = r[1], fee = r[2];
+    var have = Number(r[3].toString()), need = built.nNand;
+    if (have >= need) {
+      MF('info', '晶体管余额充足（' + have + ' 个），跳过购买，直接流片…');
+      return procW.tapeout(built.nl, built.nIn, built.nOut, { value: fee });
+    }
+    var seq = transW.mint(0, need, { value: BigInt(need) * mp + pf }).then(function (tx) {
+      MF('info', '步骤 1/2：mint 交易已广播 ' + tx.hash.slice(0, 12) + '… 确认中…');
+      return tx.wait(1);
+    });
+    return seq.then(function () {
+      MF('info', '步骤 2/2：流片上链…');
+      return procW.tapeout(built.nl, built.nIn, built.nOut, { value: fee });
+    });
+  }).then(function (tx2) {
+    MF('info', '流片交易已广播：<span class="mono">' + tx2.hash.slice(0, 12) + '…</span> 等待确认…');
+    return tx2.wait(1).then(function () {
+      MF('ok', '🎉 流片成功！tx: ' + tx2.hash.slice(0, 20) + '… （几秒后点「刷新电路列表」可见）');
+      toast('流片成功', 'ok');
+      loadCircuits(); loadInfo();
+    });
+  }).catch(function (e) {
+    MF('err', '失败: ' + String(e && (e.message || e.shortMessage) || e).slice(0, 160));
+  }).then(function () { btn.disabled = false; btn.textContent = btnBack; });
+}
+
+/* ================= 门级电路设计器 ================= */
+var dsn = { nIn: 2, gates: [['NAND', 2, 3], ['NAND', 4, 4]] };
+function dsnMsgFn(cls, txt) { var m = $('dsnMsg'); m.className = 'msg ' + cls; m.innerHTML = txt; clearTimeout(m._h); m._h = setTimeout(function () { m.className = 'msg'; }, 5000); }
+function dsnSrcOpts(maxSig, sel) {
+  /* 枚举合法信号源：0,1, in0..inN-1, g0..g(k-1) */
+  var o = '', i, sigs = [0, 1];
+  for (i = 0; i < dsn.nIn; i++) sigs.push(2 + i);
+  for (i = 2 + dsn.nIn; i < maxSig; i++) sigs.push(i);
+  for (i = 0; i < sigs.length; i++) {
+    var sg = sigs[i];
+    o += '<option value="' + sg + '"' + (sg === sel ? ' selected' : '') + '>' + sigName(sg, dsn.nIn) + '</option>';
+  }
+  return o;
+}
+function dsnRender() {
+  var wrap = $('dsnGates'), html = '';
+  for (var i = 0; i < dsn.gates.length; i++) {
+    var g = dsn.gates[i], maxSig = 2 + dsn.nIn + i;
+    html += '<div class="dsnrow"><span class="gtag">' + sigName(2 + dsn.nIn + i, dsn.nIn) + '</span>'
+      + '= NAND( <select data-g="' + i + '" data-p="0">' + dsnSrcOpts(maxSig, g[1]) + '</select>'
+      + ', <select data-g="' + i + '" data-p="1">' + dsnSrcOpts(maxSig, g[2]) + '</select> )'
+      + ' <button class="ghost mini" data-del="' + i + '">✕</button></div>';
+  }
+  wrap.innerHTML = html || '<span style="color:var(--dim)">（空电路——点「添加 NAND 门」开始设计，或载入示例）</span>';
+  $('dsnCount').textContent = dsn.gates.length + ' 门 · 晶体管成本 ≈ ' + (dsn.gates.length * 0.0001).toFixed(4) + ' OKB';
+  Array.prototype.forEach.call(wrap.querySelectorAll('select'), function (sel) {
+    sel.onchange = function () {
+      dsn.gates[+sel.dataset.g][+sel.dataset.p + 1] = +sel.value;
+      dsnPreview();
+    };
+  });
+  Array.prototype.forEach.call(wrap.querySelectorAll('button[data-del]'), function (b) {
+    b.onclick = function () { dsn.gates.splice(+b.dataset.del, 1); dsnRender(); dsnPreview(); };
+  });
+  dsnPreview();
+}
+function dsnPreview() {
+  var outSig = 2 + dsn.nIn + dsn.gates.length - 1;
+  var nNand = dsn.gates.length;
+  /* 门图（高亮随第一个组合） */
+  var viz = $('dsnViz');
+  if (!dsn.gates.length) { viz.innerHTML = '<span style="color:var(--dim);font-size:13px">暂无门——设计器等待输入</span>'; $('dsnTruth').innerHTML = ''; return; }
+  viz.innerHTML = circuitSVG(decodeNetlist(buildNetlist(dsn.nIn, dsn.gates).nl, dsn.nIn), dsn.nIn, 1, 0);
+  /* 本地真值表（≤4 入，最多 16 组合） */
+  var combos = 1 << dsn.nIn, cells = [];
+  for (var v = 0; v < combos; v++) {
+    var val = simVals(dsn.gates, dsn.nIn, v);
+    var out = val[outSig] !== undefined ? val[outSig] : 0;
+    cells.push('<span style="margin-right:10px"><b>' + v.toString(2).padStart(dsn.nIn, '0') + '</b> → '
+      + '<b style="color:' + (out ? 'var(--warn)' : 'var(--ok)') + '">' + out + '</b></span>');
+  }
+  $('dsnTruth').innerHTML = '<b>本地实时真值表：</b>' + cells.join('');
+  $('dsnTape').disabled = !signer;
+}
+function dsnInit() {
+  var sel = $('dsnNIn'), add = $('dsnAdd'), reset = $('dsnReset'), sample = $('dsnSample'), tape = $('dsnTape');
+  if (sel.dataset.bound) return;
+  sel.dataset.bound = '1';
+  sel.onchange = function () { dsn.nIn = +sel.value; dsn.gates = []; dsnRender(); };
+  add.onclick = function () {
+    var a = dsn.nIn >= 1 ? 2 : 0, b = dsn.nIn >= 2 ? 3 : (dsn.nIn >= 1 ? 2 : 1);
+    dsn.gates.push(['NAND', a, b]);
+    dsnRender();
+  };
+  reset.onclick = function () { dsn.gates = []; dsnRender(); };
+  sample.onclick = function () { dsn.nIn = 2; $('dsnNIn').value = '2'; dsn.gates = [['NAND', 2, 3], ['NAND', 2, 4], ['NAND', 3, 4], ['NAND', 5, 6]]; dsnRender(); toast('已载入 XOR 示例（4 门）', 'ok'); };
+  tape.onclick = function () {
+    if (!dsn.gates.length) { dsnMsgFn('err', '先添加至少一个门'); return; }
+    doTapeout({ key: 'dsn', name: '设计器电路', nIn: dsn.nIn, gates: dsn.gates }, dsnMsgFn, tape);
+  };
+  dsnRender();
+}
+
+/* ================= 电路市场 (OKB) ================= */
+var mkDev = null, myAddr = null;
+var mkRowsAll = [];         /* XL 全部挂单（含已售，过滤排序前） */
+var mkFillsRows = [];       /* XL 成交记录 */
+var mkBookRows = [];        /* 过滤排序后的在售+已售（渲染用） */
+var mkAll = {};             /* id -> 挂单完整数据（买入用） */
+var myCList = [];           /* 我的电路 */
+var mkUI = { q: '', sort: 'new', onlyMine: false };
+
+function mkSetMsg(cls, txt) { var m = $('mkMsg'); m.className = 'msg ' + cls; m.textContent = txt; }
+
+function initMkUI() {
+  var q = $('mkQ'), st = $('mkSort'), om = $('mkOnlyMine');
+  if (!q || q.dataset.bound) return;
+  q.dataset.bound = '1';
+  q.oninput = function () { mkUI.q = this.value; renderBook(); };
+  st.onchange = function () { mkUI.sort = this.value; renderBook(); };
+  om.onchange = function () { mkUI.onlyMine = this.checked; renderBook(); };
+}
+
+function loadBook() {
+  initMkUI();
+  fetch(location.origin + '/api/mk/listings').then(function (r) { return r.json(); }).then(function (j) {
+    if (!j || !j.ok) return;
+    mkDev = j.devWallet;
+    mkAll = {};
+    mkRowsAll = (j.listings || []).filter(function (x) { return x.chain === 'xl'; });
+    mkFillsRows = (j.fills || []).filter(function (x) { return x.chain === 'xl'; });
+    mkRowsAll.forEach(function (x) { mkAll[x.id] = x; });
+    renderBook();
+    renderFills();
+    if (signer) loadMyCircuits();
+  }).catch(function () { $('mkBook').textContent = '挂单簿加载失败，稍后重试'; });
+}
+/* ---- 市场卡片：规格静态映射（OrderGuard 上我们流片的电路）+ 未知电路链上回退 ---- */
+var MK_SPEC = {
+  1: { nIn: 2, nOut: 1, gates: 3,  name: '风控告警门',        desc: 'out = NOT(价格正常 AND 资金充足)——任一条件不满足即告警' },
+  2: { nIn: 2, nOut: 1, gates: 3,  name: '风控告警门（复刻）', desc: '与创世电路同构的告警规则，供对比验证' },
+  3: { nIn: 3, nOut: 1, gates: 12, name: '治理多数表决门',    desc: '三签治理：≥2 票同意才放行（MAJ3），DAO 多签门禁' },
+  4: { nIn: 2, nOut: 2, gates: 5,  name: '链上半加器',        desc: 'sum = XOR(in0,in1)，carry = AND(in0,in1)——链上算术第一步' },
+  5: { nIn: 4, nOut: 1, gates: 14, name: '双钥比对器',        desc: '(a0,a1) 与 (b0,b1) 两段校验一致才开门（EQ2）' }
+};
+function mkExp(tid, v) {   /* 期望真值表（bit0=第一输入/输出） */
+  if (tid === 1 || tid === 2) return [(((v & 1) & (v >> 1 & 1)) ^ 1)];
+  if (tid === 3) return [((v & 1) + (v >> 1 & 1) + (v >> 2 & 1) >= 2) ? 1 : 0];
+  if (tid === 4) return [((v & 1) ^ (v >> 1 & 1)), ((v & 1) & (v >> 1 & 1))];
+  if (tid === 5) return [((v & 1) === (v >> 2 & 1)) && ((v >> 1 & 1) === (v >> 3 & 1)) ? 1 : 0];
+  return null;
+}
+function chipSVG(tid, nIn) {   /* 确定性芯片图标：金色调，引脚数=nIn，内部纹路随 id 变化 */
+  var pins = '', i, y0;
+  for (i = 0; i < nIn; i++) { y0 = 14 + i * 12; pins += '<rect x="2" y="' + y0 + '" width="9" height="4" rx="1.5" fill="#8a6d1f"/><rect x="37" y="' + y0 + '" width="9" height="4" rx="1.5" fill="#8a6d1f"/>'; }
+  var seed = tid * 2654435761 % 4294967296, path = '';
+  for (i = 0; i < 3; i++) {
+    seed = (seed * 1103515245 + 12345) % 4294967296;
+    var mx = 16 + (seed >> 8) % 10, my = 12 + (seed >> 16) % 14;
+    path += '<path d="M' + mx + ' ' + my + ' h6 v6 h-6 z" fill="none" stroke="#d4af37" stroke-width="1.2" opacity="' + (0.45 + (i * 0.2)) + '"/>';
+  }
+  return '<svg width="48" height="48" viewBox="0 0 48 48" style="flex:none">' +
+    '<rect x="11" y="6" width="26" height="36" rx="4" fill="#1c1a10" stroke="#d4af37" stroke-width="1.4"/>' +
+    '<circle cx="16" cy="11" r="1.6" fill="#d4af37"/>' + pins + path +
+    '<text x="24" y="40" text-anchor="middle" font-size="7" fill="#d4af37" font-family="monospace">#' + tid + '</text></svg>';
+}
+function specOf(x, infoBox) {  /* 规格：静态映射优先，未知 id 走链上 circuitInfo */
+  var tid = Number(x.tokenId), s = MK_SPEC[tid];
+  if (s) { infoBox(s.nIn + ' 入 / ' + s.nOut + ' 出 · ' + s.gates + ' NAND'); return; }
+  procRead.circuitInfo(tid).then(function (ci) {
+    infoBox(Number(ci.nIn) + ' 入 / ' + Number(ci.nOut) + ' 出 · ' + Number(ci.gateCount) + ' 门');
+  }).catch(function () { infoBox('规格见链上'); });
+}
+function verifyFlow(tokenId, box) {   /* 链上全组合 eval 验证，展示真值表 + 门级电路图动画 */
+  var tid = Number(tokenId), s = MK_SPEC[tid];
+  box.innerHTML = '<span style="color:var(--dim)">链上 eval 验证中…</span>';
+  var nIn = s ? s.nIn : null, nOut = s ? s.nOut : 1;
+  var ready = nIn != null ? Promise.resolve() :
+    procRead.circuitInfo(tid).then(function (ci) { nIn = Number(ci.nIn); nOut = Number(ci.nOut); });
+  /* 门级网表：市场静态表 / 已加载电路缓存优先，否则链上拉取 */
+  var netGates = null;
+  for (var ci2 = 0; ci2 < circuits.length; ci2++) if (Number(circuits[ci2].id) === tid) { try { netGates = decodeNetlist(circuits[ci2].nl, nIn != null ? nIn : 2); } catch (e) {} break; }
+  ready = ready.then(function () {
+    if (netGates || nIn == null) return;
+    return procRead.netlist(tid).then(function (hx) { try { netGates = decodeNetlist(hx, nIn); } catch (e) {} });
+  }).catch(function () {});
+  ready.then(function () {
+    var combos = 1 << nIn, seq = Promise.resolve(), lines = [], pass = 0;
+    var expFn = function (v) { return mkExp(tid, v); };
+    var vizWrap = netGates && netGates.length ? '<div class="netviz" id="vz' + tid + '"></div>' : '';
+    box.innerHTML = vizWrap + '<div class="mono" id="tt' + tid + '" style="white-space:pre-wrap">链上 eval 验证中…</div>';
+    for (var v = 0; v < combos; v++) (function (v) {
+      seq = seq.then(function () {
+        return procRead.eval(tid, '0x' + v.toString(16).padStart(2, '0')).then(function (ob) {
+          var ov = Number(ethers.toBigInt(ob)), got = [], k;
+          for (k = 0; k < nOut; k++) got.push((ov >> k) & 1);
+          var e = expFn(v), ok = true, str;
+          if (e) { for (k = 0; k < nOut; k++) if (got[k] !== e[k]) ok = false; }
+          if (ok) pass++;
+          str = v.toString(2).padStart(nIn, '0') + ' → ' + got.join(',') + (ok ? ' ✓' : ' ✗');
+          lines.push(ok ? ('<b style="color:var(--ok)">' + str + '</b>') : ('<span style="color:var(--err,#ff6b6b)">' + str + '</span>'));
+          var tt = $('tt' + tid);
+          if (tt) tt.innerHTML = lines.join('\n');
+          var vz = $('vz' + tid);
+          if (vz) vz.innerHTML = circuitSVG(netGates, nIn, nOut, v);
+        });
+      });
+    })(v);
+    return seq.then(function () {
+      var tt = $('tt' + tid);
+      if (tt) tt.innerHTML = '链上 eval 真值表（' + pass + '/' + combos + ' 组合通过）：\n' + lines.join('\n');
+      else box.innerHTML = '验证失败：容器丢失';
+    });
+  }).catch(function (e) {
+    box.innerHTML = '验证失败: ' + String(e && (e.message || e.shortMessage) || e).slice(0, 90);
+  });
+}
+function renderBook() {
+  var el = $('mkBook');
+  /* 过滤 + 排序（对齐 BSC 老市场习惯）：在售永远排在已售前面 */
+  var rows = mkRowsAll.slice();
+  var q = (mkUI.q || '').trim().toLowerCase();
+  if (q) rows = rows.filter(function (x) {
+    var tid = Number(x.tokenId), s = MK_SPEC[tid];
+    return String(x.name || '').toLowerCase().indexOf(q) >= 0
+      || String(x.seller || '').toLowerCase().indexOf(q) >= 0
+      || (s && s.name.toLowerCase().indexOf(q) >= 0);
+  });
+  if (mkUI.onlyMine && myAddr) rows = rows.filter(function (x) { return String(x.seller).toLowerCase() === myAddr.toLowerCase(); });
+  rows.sort(function (a, b) {
+    if ((a.status === 'open') !== (b.status === 'open')) return a.status === 'open' ? -1 : 1;
+    if (mkUI.sort === 'priceAsc') return parseFloat(a.priceBnb) - parseFloat(b.priceBnb);
+    if (mkUI.sort === 'priceDesc') return parseFloat(b.priceBnb) - parseFloat(a.priceBnb);
+    if (mkUI.sort === 'gates') {
+      var ga = (MK_SPEC[Number(a.tokenId)] || {}).gates || 99, gb = (MK_SPEC[Number(b.tokenId)] || {}).gates || 99;
+      return ga - gb;
+    }
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  mkBookRows = rows;
+  /* 统计卡 */
+  var openN = 0, mineN = 0;
+  mkRowsAll.forEach(function (x) {
+    if (x.status === 'open') openN++;
+    if (myAddr && String(x.seller).toLowerCase() === myAddr.toLowerCase()) mineN++;
+  });
+  if ($('mkOpenN')) $('mkOpenN').textContent = openN;
+  if ($('mkFillN')) $('mkFillN').textContent = mkFillsRows.length;
+  if ($('mkMineN')) $('mkMineN').textContent = myAddr ? mineN : '—';
+  if ($('mkShown')) $('mkShown').textContent = rows.length;
+  if (!rows.length) { el.innerHTML = q || mkUI.onlyMine ? '没有符合条件的结果——换个关键词或清除筛选。' : '暂无在售挂单——用下面「我的电路 · 一键挂出」发布第一单！'; return; }
+  var html = '<div class="mkgrid">';
+  mkBookRows.forEach(function (x) {
+    var tid = Number(x.tokenId), s = MK_SPEC[tid];
+    var open = x.status === 'open';
+    var name = x.name || (s ? s.name : 'OrderGuard 电路 #' + tid);
+    var desc = s ? s.desc : '流片于 OrderGuard 处理器的链上布尔电路，eval() 即时验证';
+    var badge = !open ? '<span class="mkbadge badge-sold">已售</span>'
+      : (tid === 1 ? '<span class="mkbadge badge-genesis">创世电路</span>'
+      : '<span class="mkbadge badge-open">在售</span>');
+    html += '<div class="mkcard' + (open ? '' : ' sold') + '">'
+      + '<div class="mkhead">' + chipSVG(tid, s ? s.nIn : 2)
+      + '<div><div class="mkname">' + escHtml(name) + '</div>' + badge + '</div></div>'
+      + '<div class="mkspec" data-spec="' + tid + '">规格读取中…</div>'
+      + '<div class="mkdesc">' + escHtml(desc) + '</div>'
+      + '<div class="mkrow"><span class="mkprice">' + x.priceBnb + ' OKB</span>'
+      + '<span class="mono" style="font-size:11px;color:var(--dim)">' + String(x.seller).slice(0, 6) + '…' + String(x.seller).slice(-4) + '</span></div>'
+      + '<div class="mkrow">'
+      + '<button class="mini ghost" data-vfy="' + tid + '">⛓ 链上验证</button>'
+      + (open ? '<button class="mini" data-buy="' + x.id + '">买入</button>' : '<span style="font-size:11px;color:var(--dim)">买家 ' + (x.buyer ? String(x.buyer).slice(0, 6) + '…' + String(x.buyer).slice(-4) : '—') + '</span>')
+      + '</div>'
+      + '<div class="truth" id="truth-' + tid + '" style="display:none"></div>'
+      + '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-buy]'), function (b) {
+    b.onclick = function () { buyFlow(b.getAttribute('data-buy')); };
+  });
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-vfy]'), function (b) {
+    b.onclick = function () {
+      var tid = b.getAttribute('data-vfy'), box = $('truth-' + tid);
+      if (box.style.display === 'none') { box.style.display = 'block'; verifyFlow(tid, box); b.textContent = '收起'; }
+      else { box.style.display = 'none'; b.textContent = '⛓ 链上验证'; }
+    };
+  });
+  Array.prototype.forEach.call(el.querySelectorAll('[data-spec]'), function (sp) {
+    var x = null;
+    mkBookRows.forEach(function (row) { if (Number(row.tokenId) === Number(sp.getAttribute('data-spec'))) x = row; });
+    if (x) specOf(x, function (txt) { sp.textContent = txt; });
+  });
+}
+function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function shortAddr(a) { a = String(a || ''); return a.length > 12 ? a.slice(0, 6) + '…' + a.slice(-4) : a; }
+function renderFills() {
+  var tb = $('mkFills');
+  if (!tb) return;
+  if (!mkFillsRows.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:18px">暂无成交——第一笔 OKB 电路交易随时诞生</td></tr>'; return; }
+  tb.innerHTML = mkFillsRows.slice(0, 50).map(function (f) {
+    return '<tr>'
+      + '<td>' + escHtml(f.name || '未命名') + '</td>'
+      + '<td class="mono">' + shortAddr(f.seller) + '</td>'
+      + '<td class="mono">' + shortAddr(f.buyer) + '</td>'
+      + '<td style="color:var(--ok);font-weight:bold">' + escHtml(f.amountBnb) + ' OKB</td>'
+      + '<td>' + escHtml(f.feeBnb) + ' OKB</td>'
+      + '<td style="font-size:11.5px;color:var(--dim)">' + new Date(f.at).toLocaleString() + '</td>'
+      + '<td><a class="mono" href="https://www.oklink.com/xlayer/tx/' + escHtml(f.tx) + '" target="_blank" rel="noopener noreferrer">' + String(f.tx).slice(0, 8) + '… ↗</a></td>'
+      + '</tr>';
+  }).join('');
+}
+function buyFlow(id) {
+  var x = mkAll[id];
+  if (!x) { toast('挂单不存在', 'err'); return; }
+  if (!signer) { toast('请先连接 X Layer 钱包', 'err'); return; }
+  var wei;
+  try { wei = ethers.parseEther(String(x.priceBnb)); } catch (e) { toast('价格异常', 'err'); return; }
+  var fee = wei / 100n;          /* 平台 1%，与服务端一致 */
+  var toSeller = wei - fee;      /* 99%，满足服务端 ≥99% 校验 */
+  toast('步骤 1/2：向卖家支付 ' + ethers.formatEther(toSeller) + ' OKB，请在钱包确认');
+  ensureChain().then(function () {
+    return signer.sendTransaction({ to: x.seller, value: toSeller });
+  }).then(function (tx1) {
+    return tx1.wait(1).then(function () { return tx1; });
+  }).then(function (tx1) {
+    toast('步骤 2/2：支付平台费 ' + ethers.formatEther(fee) + ' OKB');
+    return signer.sendTransaction({ to: mkDev, value: fee }).then(function (tx2) {
+      return tx2.wait(1).then(function () { return tx1; });
+    });
+  }).then(function (tx1) {
+    return fetch(location.origin + '/api/mk/fill', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, buyer: myAddr, tx: tx1.hash })
+    }).then(function (r) { return r.json(); });
+  }).then(function (j) {
+    if (j && j.ok) { toast('✅ 成交登记成功！卖家将电路 NFT 转给你', 'ok'); loadBook(); }
+    else toast('登记失败: ' + String(j && j.error || '未知').slice(0, 110), 'err');
+  }).catch(function (e) {
+    toast('失败: ' + String(e && (e.message || e.shortMessage) || e).slice(0, 120), 'err');
+  });
+}
+function loadMyCircuits() {
+  var el = $('myCircuits');
+  if (!signer) { el.textContent = '连接钱包后显示…'; return; }
+  signer.getAddress().then(function (me) {
+    myAddr = me;
+    return procRead.nextId();
+  }).then(function (n) {
+    var ids = [];
+    for (var i = 1; i < Number(n); i++) ids.push(i);
+    if (!ids.length) { el.textContent = '你在 OrderGuard 还没有电路——用上面的流片工具创建第一台！'; return null; }
+    return Promise.all(ids.map(function (id) {
+      return procRead.ownerOf(id).then(function (o) {
+        return { id: id, mine: String(o).toLowerCase() === myAddr.toLowerCase() };
+      }).catch(function () { return null; });
+    })).then(function (rs) {
+      var mine = rs.filter(Boolean).filter(function (r) { return r.mine; });
+      if (!mine.length) { el.textContent = '你在 OrderGuard 还没有电路——用上面的流片工具创建第一台！'; return null; }
+      return Promise.all(mine.map(function (r) {
+        return procRead.circuitInfo(r.id).catch(function () { return null; });
+      })).then(function (infos) {
+        myCList = mine.map(function (r, i) { return { id: r.id, info: infos[i] }; });
+        renderMy();
+      });
+    });
+  }).catch(function (e) { el.textContent = '读取失败: ' + String(e && e.message || e).slice(0, 90); });
+}
+function renderMy() {
+  var el = $('myCircuits');
+  var html = '';
+  myCList.forEach(function (c) {
+    var listed = null;
+    mkBookRows.forEach(function (x) { if (Number(x.tokenId) === c.id) listed = x; });
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0">'
+      + '<b>电路 #' + c.id + '</b>'
+      + '<span>' + (c.info ? c.info.nIn + '入 / ' + c.info.gateCount + '门' : '') + '</span>';
+    if (listed) {
+      html += '<span class="badge">在售中 · ' + listed.priceBnb + ' OKB</span>'
+        + '<button class="ghost mini" data-cancel="' + listed.id + '">取消挂单</button>';
+    } else {
+      html += '<input type="number" step="0.0001" min="0.0001" placeholder="价格 OKB" id="px' + c.id + '" style="width:120px">'
+        + '<button class="mini" data-list="' + c.id + '">一键挂出</button>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-list]'), function (b) {
+    b.onclick = function () { listCircuit(Number(b.getAttribute('data-list'))); };
+  });
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-cancel]'), function (b) {
+    b.onclick = function () { cancelListing(b.getAttribute('data-cancel')); };
+  });
+}
+function listCircuit(id) {
+  var px = document.getElementById('px' + id).value;
+  if (!/^\d+(\.\d{1,6})?$/.test(px) || Number(px) <= 0) { mkSetMsg('err', '价格不合法（正数，最多 6 位小数）'); return; }
+  if (!signer) { mkSetMsg('err', '请先连接钱包'); return; }
+  mkSetMsg('info', '请在钱包弹窗中签名确认挂单（免费、不上链）…');
+  var ts = Date.now();
+  var msg = 'TapeOut市场·挂单确认\n卖家: ' + myAddr + '\n品种: ' + PROC + ' #' + id + '\n数量: 1\n单价: ' + px + ' OKB\n时间: ' + ts;
+  window.ethereum.request({ method: 'personal_sign', params: [ethers.hexlify(ethers.toUtf8Bytes(msg)), myAddr] }).then(function (sig) {
+    return fetch(location.origin + '/api/mk/list', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chain: 'xl', name: 'OrderGuard 电路 #' + id, circuits: PROC, tokenId: id, qty: 1, priceBnb: px, seller: myAddr, ts: ts, sig: sig })
+    }).then(function (r) { return r.json(); });
+  }).then(function (j) {
+    if (j && j.ok) { mkSetMsg('ok', '✅ 挂单成功！电路 #' + id + ' 已以 ' + px + ' OKB 挂出'); loadBook(); }
+    else mkSetMsg('err', '挂单失败: ' + String(j && j.error || '未知').slice(0, 120));
+  }).catch(function (e) {
+    mkSetMsg('err', '挂单失败: ' + String(e && (e.message || e.shortMessage) || e).slice(0, 120));
+  });
+}
+function cancelListing(listingId) {
+  if (!signer) { toast('请先连接钱包', 'err'); return; }
+  var msg = 'TapeOut市场·取消挂单 ' + listingId;
+  window.ethereum.request({ method: 'personal_sign', params: [ethers.hexlify(ethers.toUtf8Bytes(msg)), myAddr] }).then(function (sig) {
+    return fetch(location.origin + '/api/mk/cancel', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: listingId, sig: sig })
+    }).then(function (r) { return r.json(); });
+  }).then(function (j) {
+    if (j && j.ok) { toast('挂单已取消', 'ok'); loadBook(); }
+    else toast('取消失败: ' + String(j && j.error || '未知').slice(0, 110), 'err');
+  }).catch(function (e) { toast('取消失败: ' + String(e && (e.message || e.shortMessage) || e).slice(0, 110), 'err'); });
+}
+
+
+/* ================= 启动（等 defer 的 ethers 就绪后再初始化） ================= */
+function boot() {
+  provider = gwProvider();
+  procRead = new ethers.Contract(PROC, PROC_ABI, provider);
+  renderTpls();
+  dsnInit();
+  loadInfo();
+  loadBook();
+  setInterval(loadBook, 60000);   /* 挂单簿每分钟自动刷新 */
+}
+function whenEthers(cb, tries) {
+  if (typeof ethers !== 'undefined') return cb();
+  if (tries > 100) return;        /* 10s 仍未加载（网络极差）则放弃 */
+  setTimeout(function () { whenEthers(cb, tries + 1); }, 100);
+}
+window.addEventListener('DOMContentLoaded', function () { whenEthers(boot, 0); });
+})();
+</script>
+</body>
+</html>
