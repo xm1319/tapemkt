@@ -1,0 +1,6 @@
+key.txt
+*.key
+secrets/
+_secrets_quarantine/
+node_modules/
+*.log
